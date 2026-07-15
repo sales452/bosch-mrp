@@ -372,7 +372,10 @@ function render(list, q){
     return;
   }
 
-  results.innerHTML = list.map(p => {
+  const MAX_RENDER = 60;
+  const shown = list.slice(0, MAX_RENDER);
+
+  results.innerHTML = shown.map(p => {
     const billPrice = p.mrp * (1 - DISCOUNT_BILL);
     const cashPrice = p.mrp * (1 - DISCOUNT_CASH);
     return `
@@ -397,7 +400,9 @@ function render(list, q){
         </div>
       </div>
     </div>`;
-  }).join('');
+  }).join('') + (list.length > MAX_RENDER
+    ? `<div class="empty-state" style="padding:24px;"><div class="small">Showing first ${MAX_RENDER} of ${list.length} matches — keep typing to narrow it down</div></div>`
+    : '');
 }
 
 function search(q){
@@ -406,15 +411,20 @@ function search(q){
   clearBtn.style.display='block';
   const ql = q.toLowerCase();
   const list = PARTS.filter(p =>
-    (p.newPart && p.newPart.toLowerCase().includes(ql)) ||
-    (p.alt && p.alt.toLowerCase().includes(ql)) ||
-    (p.oldPart && p.oldPart.toLowerCase().includes(ql)) ||
-    (p.desc && p.desc.toLowerCase().includes(ql))
+    (p._newPart && p._newPart.includes(ql)) ||
+    (p._alt && p._alt.includes(ql)) ||
+    (p._oldPart && p._oldPart.includes(ql)) ||
+    (p._desc && p._desc.includes(ql))
   );
   render(list, q);
 }
 
-input.addEventListener('input', e => search(e.target.value));
+let debounceTimer = null;
+input.addEventListener('input', e => {
+  const val = e.target.value;
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => search(val), 100);
+});
 clearBtn.addEventListener('click', () => { input.value=''; search(''); input.focus(); });
 
 /* Normalize a raw row from the sheet feed into our expected shape,
@@ -448,6 +458,13 @@ async function loadData(){
     const raw = await res.json();
     if(!Array.isArray(raw) || raw.length === 0) throw new Error('Empty or unexpected response');
     PARTS = raw.map(normalize).filter(p => p.oldPart || p.newPart || p.alt || p.desc);
+    // Pre-compute lowercase versions once so every keystroke doesn't re-lowercase 7500+ rows
+    PARTS.forEach(p => {
+      p._newPart = p.newPart.toLowerCase();
+      p._alt = p.alt.toLowerCase();
+      p._oldPart = p.oldPart.toLowerCase();
+      p._desc = p.desc.toLowerCase();
+    });
     countLabel.textContent = `${PARTS.length} parts loaded`;
     render([], '');
   }catch(err){
