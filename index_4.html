@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parts Finder — Auto Electricals Catalogue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#12130f;
+    --panel:#1b1c17;
+    --panel-2:#232419;
+    --steel:#5a5f52;
+    --paper:#eae6d9;
+    --paper-dim:#b9b6a6;
+    --amber:#e8842c;
+    --amber-dim:#7a4a1f;
+    --ok:#7fae5a;
+    --line:#33342a;
+    --radius:2px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      repeating-linear-gradient(135deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 14px),
+      var(--ink);
+    color:var(--paper);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+  }
+
+  /* ---------- HEADER ---------- */
+  header{
+    border-bottom:1px solid var(--line);
+    padding:28px 24px 22px;
+    background:linear-gradient(180deg, var(--panel), var(--ink));
+    position:sticky;
+    top:0;
+    z-index:10;
+  }
+  .header-inner{
+    max-width:980px;
+    margin:0 auto;
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:.18em;
+    color:var(--amber);
+    text-transform:uppercase;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:10px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:8px;height:8px;
+    background:var(--amber);
+    border-radius:50%;
+    box-shadow:0 0 8px var(--amber);
+  }
+  h1{
+    font-family:'Oswald',sans-serif;
+    font-weight:700;
+    font-size:clamp(28px,4vw,42px);
+    letter-spacing:.01em;
+    margin:0 0 4px;
+    text-transform:uppercase;
+  }
+  .sub{
+    color:var(--paper-dim);
+    font-size:14px;
+    margin-bottom:20px;
+  }
+
+  .search-wrap{
+    position:relative;
+  }
+  .search-wrap input{
+    width:100%;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    color:var(--paper);
+    font-family:'JetBrains Mono',monospace;
+    font-size:17px;
+    padding:16px 48px 16px 46px;
+    outline:none;
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  .search-wrap input::placeholder{color:var(--steel);}
+  .search-wrap input:focus{
+    border-color:var(--amber);
+    box-shadow:0 0 0 3px rgba(232,132,44,.15);
+  }
+  .search-icon{
+    position:absolute;
+    left:16px;top:50%;
+    transform:translateY(-50%);
+    color:var(--steel);
+    pointer-events:none;
+  }
+  .search-wrap input:focus ~ .search-icon{color:var(--amber);}
+  .clear-btn{
+    position:absolute;
+    right:12px;top:50%;
+    transform:translateY(-50%);
+    background:none;border:none;
+    color:var(--steel);
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    letter-spacing:.05em;
+    cursor:pointer;
+    padding:6px 8px;
+    display:none;
+  }
+  .clear-btn:hover{color:var(--amber);}
+
+  .meta-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:12px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+    color:var(--steel);
+  }
+
+  /* ---------- MAIN ---------- */
+  main{
+    max-width:980px;
+    margin:0 auto;
+    padding:26px 24px 80px;
+  }
+
+  #results{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+
+  .empty-state{
+    text-align:center;
+    padding:70px 20px;
+    color:var(--steel);
+  }
+  .empty-state .big{
+    font-family:'Oswald',sans-serif;
+    font-size:20px;
+    color:var(--paper-dim);
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    margin-bottom:8px;
+  }
+  .empty-state .small{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+  }
+
+  /* ---------- CARD (parts tag styling) ---------- */
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-left:3px solid var(--amber);
+    border-radius:var(--radius);
+    padding:18px 20px;
+    display:grid;
+    grid-template-columns: 1fr auto;
+    gap:14px 24px;
+    animation:rise .25s ease both;
+  }
+  @keyframes rise{
+    from{opacity:0; transform:translateY(6px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+
+  .card-main{grid-column:1;}
+  .desc{
+    font-family:'Oswald',sans-serif;
+    font-size:19px;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.01em;
+    color:var(--paper);
+    margin-bottom:10px;
+  }
+
+  .idrow{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px 10px;
+    margin-bottom:4px;
+  }
+  .tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    padding:4px 8px;
+    border-radius:2px;
+    border:1px solid var(--line);
+    background:var(--panel-2);
+    color:var(--paper-dim);
+    white-space:nowrap;
+  }
+  .tag .label{
+    color:var(--steel);
+    margin-right:6px;
+    font-size:10px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+  }
+  .tag.hit{
+    border-color:var(--amber);
+    color:var(--paper);
+    background:rgba(232,132,44,.09);
+  }
+  .tag.hit .label{color:var(--amber);}
+  .tag mark{
+    background:var(--amber);
+    color:var(--ink);
+    border-radius:1px;
+    padding:0 1px;
+  }
+
+  .price-block{
+    grid-column:2;
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    justify-content:center;
+    gap:8px;
+    min-width:190px;
+    border-left:1px dashed var(--line);
+    padding-left:20px;
+  }
+  .mrp-line{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    font-weight:700;
+    color:var(--paper-dim);
+  }
+  .price-row{
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+    justify-content:flex-end;
+  }
+  .price-row .plabel{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    color:var(--paper-dim);
+  }
+  .price-row .pval{
+    font-family:'Oswald',sans-serif;
+    font-size:22px;
+    font-weight:700;
+  }
+  .price-row.bill .pval{color:var(--ok);}
+  .price-row.cash .pval{color:var(--amber);}
+
+  @media(max-width:640px){
+    .card{grid-template-columns:1fr;}
+    .price-block{
+      grid-column:1;
+      align-items:flex-start;
+      border-left:none;
+      border-top:1px dashed var(--line);
+      padding-left:0;
+      padding-top:12px;
+    }
+    .price-row{justify-content:flex-start;}
+  }
+
+  footer{
+    text-align:center;
+    color:var(--steel);
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    padding:20px;
+    border-top:1px solid var(--line);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="eyebrow">Live catalogue · type to search</div>
+    <h1>Parts Finder</h1>
+    <div class="sub">Search by new part no., old part no., alternate/OEM no., or description.</div>
+    <div class="search-wrap">
+      <span class="search-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      </span>
+      <input id="searchInput" type="text" placeholder="e.g. 0242040506EHG, alternator, glow plug…" autocomplete="off" autofocus>
+      <button class="clear-btn" id="clearBtn">CLEAR ✕</button>
+    </div>
+    <div class="meta-row">
+      <span id="countLabel">— parts loaded</span>
+      <span>DISCOUNT · 18% WITH BILL · 22% CASH</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div id="results"></div>
+</main>
+
+<footer>Prices shown are MRP-derived estimates · confirm at billing</footer>
+
+<script>
+/* ================= DATA SOURCE =================
+   Live feed from your Google Apps Script Web App.
+   Must end in /exec and return JSON like:
+   [{"newPart":"","alt":"","oldPart":"01241100074AV","desc":"Alternator","mrp":8675}, ...]
+*/
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbwZftHdKNdOn3P2tv0SMuDHU75gldrJRDbVuD2hiIBebzl7QXi04199y3YAMt11Sfeh6w/exec";
+
+let PARTS = [];
+
+/* ================= CONFIG ================= */
+const DISCOUNT_BILL = 0.18;   // 18% off -> "with bill"
+const DISCOUNT_CASH = 0.22;   // 22% off -> "without bill / cash"
+
+/* ================= LOGIC ================= */
+const input = document.getElementById('searchInput');
+const results = document.getElementById('results');
+const countLabel = document.getElementById('countLabel');
+const clearBtn = document.getElementById('clearBtn');
+
+function fmt(n){
+  return '₹' + Math.round(n).toLocaleString('en-IN');
+}
+
+function highlight(text, q){
+  if(!text) return '';
+  if(!q) return escapeHtml(text);
+  const idx = text.toLowerCase().indexOf(q.toLowerCase());
+  if(idx === -1) return escapeHtml(text);
+  return escapeHtml(text.slice(0,idx)) + '<mark>' + escapeHtml(text.slice(idx, idx+q.length)) + '</mark>' + escapeHtml(text.slice(idx+q.length));
+}
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function fieldTag(label, value, q){
+  if(!value) return '';
+  const isHit = q && value.toLowerCase().includes(q.toLowerCase());
+  return `<span class="tag${isHit ? ' hit' : ''}"><span class="label">${label}</span>${highlight(value, isHit ? q : '')}</span>`;
+}
+
+function render(list, q){
+  countLabel.textContent = `${PARTS.length} parts loaded · ${list.length} match${list.length===1?'':'es'}`;
+
+  if(!q){
+    results.innerHTML = `<div class="empty-state">
+      <div class="big">Start typing a part number</div>
+      <div class="small">Try a new part no., old part no., OEM no., or a word like "alternator"</div>
+    </div>`;
+    return;
+  }
+
+  if(list.length === 0){
+    results.innerHTML = `<div class="empty-state">
+      <div class="big">No match for "${escapeHtml(q)}"</div>
+      <div class="small">Check the number or try a shorter fragment</div>
+    </div>`;
+    return;
+  }
+
+  results.innerHTML = list.map(p => {
+    const billPrice = p.mrp * (1 - DISCOUNT_BILL);
+    const cashPrice = p.mrp * (1 - DISCOUNT_CASH);
+    return `
+    <div class="card">
+      <div class="card-main">
+        <div class="desc">${highlight(p.desc, p.desc.toLowerCase().includes(q.toLowerCase()) ? q : '')}</div>
+        <div class="idrow">
+          ${fieldTag('New No.', p.newPart, q)}
+          ${fieldTag('Alt / OEM', p.alt, q)}
+          ${fieldTag('Old No.', p.oldPart, q)}
+        </div>
+      </div>
+      <div class="price-block">
+        <div class="mrp-line">MRP ${fmt(p.mrp)}</div>
+        <div class="price-row bill">
+          <span class="plabel">With Bill (−18%)</span>
+          <span class="pval">${fmt(billPrice)}</span>
+        </div>
+        <div class="price-row cash">
+          <span class="plabel">Cash (−22%)</span>
+          <span class="pval">${fmt(cashPrice)}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function search(q){
+  q = q.trim();
+  if(!q){ render([], ''); clearBtn.style.display='none'; return; }
+  clearBtn.style.display='block';
+  const ql = q.toLowerCase();
+  const list = PARTS.filter(p =>
+    (p.newPart && p.newPart.toLowerCase().includes(ql)) ||
+    (p.alt && p.alt.toLowerCase().includes(ql)) ||
+    (p.oldPart && p.oldPart.toLowerCase().includes(ql)) ||
+    (p.desc && p.desc.toLowerCase().includes(ql))
+  );
+  render(list, q);
+}
+
+input.addEventListener('input', e => search(e.target.value));
+clearBtn.addEventListener('click', () => { input.value=''; search(''); input.focus(); });
+
+/* Normalize a raw row from the sheet feed into our expected shape,
+   in case key names differ slightly (e.g. different casing/spacing). */
+function normalize(row){
+  function pick(...keys){
+    for(const k of keys){
+      if(row[k] !== undefined && row[k] !== null) return String(row[k]).trim();
+    }
+    return '';
+  }
+  const mrpRaw = pick('mrp','MRP','Mrp');
+  return {
+    newPart: pick('newPart','NEW PART NUMBER','newPartNumber'),
+    alt:     pick('alt','ALTERNATE PART NUMBER / OEM NUMBER','alternate','oem'),
+    oldPart: pick('oldPart','OLD PART NUMBER','oldPartNumber'),
+    desc:    pick('desc','DESCRIPTION','description'),
+    mrp:     Number(mrpRaw.replace(/[^0-9.]/g,'')) || 0
+  };
+}
+
+async function loadData(){
+  countLabel.textContent = 'Loading catalogue…';
+  results.innerHTML = `<div class="empty-state">
+    <div class="big">Loading catalogue…</div>
+    <div class="small">Fetching live data from your Google Sheet</div>
+  </div>`;
+  try{
+    const res = await fetch(SHEET_URL, { cache: 'no-store' });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const raw = await res.json();
+    if(!Array.isArray(raw) || raw.length === 0) throw new Error('Empty or unexpected response');
+    PARTS = raw.map(normalize).filter(p => p.oldPart || p.newPart || p.alt || p.desc);
+    countLabel.textContent = `${PARTS.length} parts loaded`;
+    render([], '');
+  }catch(err){
+    console.error('Failed to load sheet data:', err);
+    countLabel.textContent = 'Could not load live data';
+    results.innerHTML = `<div class="empty-state">
+      <div class="big">Couldn't load the catalogue</div>
+      <div class="small">${escapeHtml(err.message)}<br>Check that the Apps Script is deployed with "Anyone" access, and that the URL ends in /exec.</div>
+    </div>`;
+  }
+}
+
+// init
+loadData();
+</script>
+</body>
+</html>
